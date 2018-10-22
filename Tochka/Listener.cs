@@ -22,8 +22,7 @@ namespace Tochka
         */
 
         private readonly ISocial _vk;
-        private readonly ITextAnalyze _analyze;
-        
+        private readonly ITextAnalyze _analyze;        
         private string template = "йцукенгшщзхъфывапролджэячсмитьбю";
         private bool isSignIn = false;
         public Listener()
@@ -49,30 +48,46 @@ namespace Tochka
                     }
                     else if (id != "")
                     {
-                        GetPosts(id);
+                        var posts = GetPosts(id);
+                        SendPosts(posts, id);
                     }
                 }
             }
         }
 
-        private void GetPosts(string id)
+        private void SendPosts(ICollection<string> posts, string id)
         {
-            try
+            if (posts != null && posts.Count > 0)
             {
-                var posts = _vk.GetPosts(id, 5);
-                if (posts != null && posts.Count > 0)
+                var dict = _analyze.FindFrequency(posts, template);
+                var jsonStr = JsonConvert.SerializeObject(dict);
+                Console.WriteLine($"{id}, статистика для последних 5 постов:\n{jsonStr}");
+                Console.WriteLine("Публикация данных на вашей стене...");
+                try
                 {
-                    var dict = _analyze.FindFrequency(posts, template);
-                    var jsonStr = JsonConvert.SerializeObject(dict);
-                    Console.WriteLine($"{id}, статистика для последних 5 постов:{jsonStr}");
-                    Console.WriteLine("Публикация данных на вашей стене...");
-                    _vk.SendPostToMe(jsonStr);
+                    _vk.SendPostToMe($"{id}, статистика для последних 5 постов:\n{jsonStr}");
                     Console.WriteLine("Опубликовано");
                 }
-                else
+                catch (VkApiException)
                 {
-                    Console.WriteLine("Посты не найдены.");
+                    Console.WriteLine("Ошибка в публикации");
                 }
+            }
+            else
+            {
+                Console.WriteLine("Посты не найдены.");
+            }
+            
+            
+        }
+
+        private ICollection<string> GetPosts(string id)
+        {
+            ICollection<string> result = null;
+            try
+            {
+                result = _vk.GetPosts(id, 5);
+                
             }
             catch (UserAuthorizationFailException)
             {
@@ -82,6 +97,7 @@ namespace Tochka
             {
                 Console.WriteLine("Ошибка в доступе");
             }
+            return result;
         }
 
         private void SignIn()

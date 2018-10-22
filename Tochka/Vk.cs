@@ -89,7 +89,7 @@ namespace Tochka
             _vkapi.Wall.Post(new WallPostParams()
             {
                 OwnerId = _vkapi.UserId,
-                Message = $"{user}, статистика для последних 5 постов:\n{data}"
+                Message = data
             });
         }
     }
